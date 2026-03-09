@@ -57,6 +57,6 @@ ENV CLOUDRU_API_KEY=""
 ENV OPENCODE_SERVER_PASSWORD=""
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
-    CMD curl -f http://localhost:4096/doc || exit 1
+    CMD wget -q -O- http://localhost:4096/session || exit 1
 
 CMD ["opencode", "serve", "--port", "4096", "--hostname", "0.0.0.0"]
