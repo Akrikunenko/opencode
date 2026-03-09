@@ -1,20 +1,26 @@
-FROM node:22-alpine
+FROM node:22-slim
 
-# Системные зависимости
-RUN apk add --no-cache \
+# Системные зависимости (Debian-based, совместим с opencode-ai бинарником)
+RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
-    py3-pip \
+    python3-pip \
+    python3-venv \
     git \
     bash \
     curl \
-  && pip3 install --break-system-packages \
+  && python3 -m venv /opt/venv \
+  && /opt/venv/bin/pip install \
     python-docx \
     openpyxl \
     python-pptx \
     pypdf2 \
-    lxml
+    lxml \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
-# Устанавливаем OpenCode (пакет называется opencode-ai)
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Устанавливаем OpenCode
 RUN npm install -g opencode-ai
 
 # Создаём нужные директории
@@ -24,8 +30,7 @@ RUN mkdir -p \
     /root/.claude/skills \
     /workspace
 
-# Клонируем skills от Anthropic напрямую из их репозитория
-# Берём только нужные папки (docx, xlsx, pptx, pdf) через sparse-checkout
+# Клонируем skills от Anthropic
 RUN git clone --depth=1 --filter=blob:none --sparse \
     https://github.com/anthropics/skills.git /tmp/anthropic-skills \
   && cd /tmp/anthropic-skills \
@@ -36,11 +41,10 @@ RUN git clone --depth=1 --filter=blob:none --sparse \
   && cp -r skills/pdf  /root/.claude/skills/pdf \
   && rm -rf /tmp/anthropic-skills
 
-# Копируем конфиг провайдера (cloud.ru GLM)
+# Копируем конфиг провайдера
 COPY opencode.json /root/.config/opencode/opencode.json
 
-# Инициализируем пустой git репозиторий
-# (opencode требует git контекст для поиска skills)
+# Инициализируем git репозиторий (opencode требует git контекст)
 WORKDIR /workspace
 RUN git init \
   && git config user.email "opencode@service" \
@@ -55,5 +59,4 @@ ENV OPENCODE_SERVER_PASSWORD=""
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
     CMD curl -f http://localhost:4096/doc || exit 1
 
-# Запуск как headless HTTP сервер, доступный внутри Docker сети
 CMD ["opencode", "serve", "--port", "4096", "--hostname", "0.0.0.0"]
