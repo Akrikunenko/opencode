@@ -1,0 +1,34 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  "model": "cloudru/glm-4",
+
+  "provider": {
+    "cloudru": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Cloud.ru GLM",
+      "options": {
+        "baseURL": "https://api.cloud.ru/v1",
+        "apiKey": "{env:CLOUDRU_API_KEY}"
+      },
+      "models": {
+        "glm-4": {
+          "name": "GLM-4.7",
+          "limit": {
+            "context": 128000,
+            "output": 4096
+          }
+        }
+      }
+    }
+  },
+
+  "permission": {
+    "bash":  { "*": "allow" },
+    "read":  { "*": "allow" },
+    "write": { "*": "allow" },
+    "skill": { "*": "allow" }
+  },
+
+  "autoupdate": false
+}
